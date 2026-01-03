@@ -6,12 +6,30 @@
         :options="apartments"
         option-label="name"
         option-value="id"
-        label="Odaberi apartman"
+        :label="$t('selectApartment')"
         emit-value
         map-options
       />
     </q-card-section>
+
     <q-separator />
+
+    <!-- Month/Year Navigation -->
+    <q-card-section class="row items-center q-py-sm">
+      <q-btn
+        flat
+        round
+        dense
+        icon="chevron_left"
+        @click="previousMonth"
+        :disable="isPreviousMonthDisabled"
+      />
+      <div class="col text-center text-h6">{{ currentMonthLabel }} {{ currentYear }}</div>
+      <q-btn flat round dense icon="chevron_right" @click="nextMonth" />
+    </q-card-section>
+
+    <q-separator />
+
     <q-calendar-month
       v-model="selectedDate"
       bordered
@@ -21,46 +39,61 @@
     >
       <template #day="{ scope }">
         <div
-          class="day-container"
+          class="q-pa-xs relative-position full-height overflow-hidden"
           :class="{
-            start: isStart(scope.timestamp.date),
-            end: isEnd(scope.timestamp.date),
-            between: isBetween(scope.timestamp.date),
+            'bg-red-1': isBetween(scope.timestamp.date),
+            'past-date': isPastDate(scope.timestamp.date),
           }"
+          :style="getDayContainerStyle(scope.timestamp.date)"
         >
-          <!-- one background layer per day -->
+          <!-- background booking layer -->
           <div
             v-if="reservationsForDay(scope.timestamp.date).length"
-            class="booking-layer"
-            :class="getDayBookingClass(scope.timestamp.date)"
-          />
+            class="absolute-full"
+            :style="getBookingLayerStyle(scope.timestamp.date)"
+          ></div>
 
-          <div class="date-label">{{ scope.timestamp.day }}</div>
+          <div class="text-caption text-grey-7 q-mb-xs" style="z-index: 2; position: relative">
+            {{ scope.timestamp.day }}
+          </div>
 
-          <!-- show names normally (no absolute full-cover blocks) -->
-          <div class="guest" v-for="res in reservationsForDay(scope.timestamp.date)" :key="res.id">
+          <div
+            class="ellipsis text-weight-regular text-white text-caption"
+            v-for="res in reservationsForDay(scope.timestamp.date)"
+            :key="res.id"
+            style="z-index: 2; position: relative"
+          >
             {{ res.guestName }}
           </div>
         </div>
       </template>
     </q-calendar-month>
+
+    <ReservationDialog
+      v-model="showDialog"
+      :start="startDate"
+      :end="endDate"
+      @save="addReservation"
+    />
   </q-card>
-  <ReservationDialog
-    v-model="showDialog"
-    :start="startDate"
-    :end="endDate"
-    @save="addReservation"
-  />
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useQuasar } from 'quasar'
+import { useI18n } from 'vue-i18n'
 import ReservationDialog from './ReservationDialog.vue'
+
+const $q = useQuasar()
+const { t: $t } = useI18n()
 
 const showDialog = ref(false)
 const startDate = ref(null)
 const endDate = ref(null)
-const selectedDate = ref(new Date().toISOString().substring(0, 10))
+
+// Initialize to current date
+const today = new Date().toISOString().substring(0, 10)
+const selectedDate = ref(today)
 const selectedApartment = ref(1)
 
 const apartments = ref([
@@ -85,60 +118,173 @@ const reservations = ref([
   },
 ])
 
+// Month navigation computed properties
+const currentYear = computed(() => {
+  return new Date(selectedDate.value).getFullYear()
+})
+
+const currentMonth = computed(() => {
+  return new Date(selectedDate.value).getMonth()
+})
+
+const currentMonthLabel = computed(() => {
+  const monthKeys = [
+    'january',
+    'february',
+    'march',
+    'april',
+    'may',
+    'june',
+    'july',
+    'august',
+    'september',
+    'october',
+    'november',
+    'december',
+  ]
+  return $t(`months.${monthKeys[currentMonth.value]}`)
+})
+
+const isPreviousMonthDisabled = computed(() => {
+  const currentDate = new Date()
+  const selectedDateObj = new Date(selectedDate.value)
+
+  // Disable if we're viewing current month or earlier
+  return (
+    selectedDateObj.getFullYear() <= currentDate.getFullYear() &&
+    selectedDateObj.getMonth() <= currentDate.getMonth()
+  )
+})
+
+function previousMonth() {
+  const date = new Date(selectedDate.value)
+  date.setMonth(date.getMonth() - 1)
+  selectedDate.value = date.toISOString().substring(0, 10)
+}
+
+function nextMonth() {
+  const date = new Date(selectedDate.value)
+  date.setMonth(date.getMonth() + 1)
+  selectedDate.value = date.toISOString().substring(0, 10)
+}
+
+function isPastDate(date) {
+  return date < today
+}
+
 function reservationsForDay(date) {
   return reservations.value.filter(
     (r) => r.apartmentId === selectedApartment.value && date >= r.start && date <= r.end,
   )
 }
 
-function getDayBookingClass(date) {
+function getBookingLayerStyle(date) {
   const dayRes = reservationsForDay(date)
-  if (!dayRes.length) return ''
+  if (!dayRes.length) return {}
 
   const starts = dayRes.some((r) => r.start === date)
   const ends = dayRes.some((r) => r.end === date)
   const middles = dayRes.some((r) => date > r.start && date < r.end)
-
-  // 5th state: checkout + checkin on the same day (usually 2 reservations that day)
   const turnover = starts && ends && dayRes.length >= 2 && !middles
 
-  if (turnover) return 'bg-turnover'
-  if (middles) return 'bg-full'
-  if (starts && !ends) return 'bg-start'
-  if (ends && !starts) return 'bg-end'
+  if (turnover) {
+    return {
+      background: `linear-gradient(
+        135deg,
+        #e53935 0%,
+        #e53935 49%,
+        #fff 49%,
+        #fff 51%,
+        #e53935 51%,
+        #e53935 100%
+      )`,
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  if (middles) {
+    return {
+      background: '#e53935',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  if (starts && !ends) {
+    return {
+      background: 'linear-gradient(135deg, #fff 0 50%, #e53935 50%)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  if (ends && !starts) {
+    return {
+      background: 'linear-gradient(135deg, #e53935 0 50%, #fff 50%)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  return {
+    background: '#e53935',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  }
+}
 
-  // fallback (e.g. start === end single-day reservation)
-  return 'bg-full'
+function getDayContainerStyle(date) {
+  if (isStart(date)) {
+    return {
+      background: 'linear-gradient(135deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  if (isEnd(date)) {
+    return {
+      background: 'linear-gradient(315deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%)',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    }
+  }
+  return {}
 }
 
 function onClickDate({ scope }) {
   const date = scope.timestamp.date
 
-  // Check if this date is truly occupied (start or middle, but NOT end)
+  // Prevent booking in the past
+  if (isPastDate(date)) {
+    $q.notify({
+      type: 'negative',
+      message: $t('cannotBookPastDates'),
+      position: 'top',
+    })
+    return
+  }
+
+  // Check if date is occupied
   const isOccupied = reservations.value.some(
     (r) => r.apartmentId === selectedApartment.value && date >= r.start && date < r.end,
   )
 
-  // Can't click if occupied
   if (isOccupied) {
     return
   }
 
-  // prvi klik → start
+  // First click → start
   if (!startDate.value) {
     startDate.value = date
     endDate.value = null
     return
   }
 
-  // drugi klik → end
+  // Second click → end
   if (!endDate.value && date > startDate.value) {
     endDate.value = date
     showDialog.value = true
     return
   }
 
-  // reset ako klikneš opet
+  // Reset if clicked again
   startDate.value = date
   endDate.value = null
 }
@@ -167,94 +313,15 @@ function isEnd(date) {
 </script>
 
 <style scoped>
-/* ===== Cell wrapper ===== */
-.day-container {
-  padding: 4px;
-  position: relative;
-  height: 100%;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* ===== Day number ===== */
-.date-label {
-  font-size: 12px;
-  color: #666;
-  position: relative;
-  z-index: 2;
-}
-
-/* ===== Guest rows (text only) ===== */
-.guest {
-  font-size: 11px;
-  line-height: 1.1;
-  color: #fff;
-  position: relative;
-  z-index: 2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ===== Reservation background layer (one per day) ===== */
-.booking-layer {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  z-index: 0;
+.past-date {
+  opacity: 0.4;
   pointer-events: none;
-}
-
-/* 1) fully booked (solid red) */
-.booking-layer.bg-full {
-  background: #e53935;
-}
-
-/* 2) start day (half white / half red) */
-.booking-layer.bg-start {
-  /* white triangle top-left, red bottom-right */
-  background: linear-gradient(135deg, #ffffff 0 50%, #e53935 50% 100%);
-}
-
-/* 3) end day (half red / half white) */
-.booking-layer.bg-end {
-  /* white triangle top-right, red bottom-left */
-  background: linear-gradient(225deg, #ffffff 0 50%, #e53935 50% 100%);
-}
-
-/* 4) turnover day (end + start on same day) -> 4 triangles */
-.booking-layer.bg-turnover {
-  background: conic-gradient(
-    from 45deg,
-    #e53935 0 90deg,
-    #ffffff 90deg 180deg,
-    #e53935 180deg 270deg,
-    #ffffff 270deg 360deg
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(0, 0, 0, 0.03) 10px,
+    rgba(0, 0, 0, 0.03) 20px
   );
-}
-
-/* ===== Your selection styling (click-range preview) ===== */
-.day-container.between {
-  background: rgba(229, 57, 53, 0.3);
-}
-
-.day-container.start::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%);
-  border-radius: 6px;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.day-container.end::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(315deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%);
-  border-radius: 6px;
-  z-index: 1;
-  pointer-events: none;
 }
 </style>
