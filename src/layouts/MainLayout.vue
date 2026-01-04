@@ -4,9 +4,19 @@
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
-        <q-toolbar-title> Quasar App </q-toolbar-title>
+        <q-toolbar-title> Apartmani </q-toolbar-title>
+        <!-- Language switcher -->
+        <q-btn-dropdown flat dense icon="language" :label="currentLangLabel">
+          <q-list>
+            <q-item clickable v-close-popup @click="setLocale('en-US')">
+              <q-item-section>English</q-item-section>
+            </q-item>
 
-        <div>Quasar v{{ $q.version }}</div>
+            <q-item clickable v-close-popup @click="setLocale('hr')">
+              <q-item-section>Hrvatski</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-toolbar>
     </q-header>
 
@@ -27,6 +37,22 @@
 <script setup>
 import { ref } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { LocalStorage } from 'quasar'
+import { setQuasarLang } from 'src/boot/i18n'
+
+const { locale } = useI18n()
+
+const currentLangLabel = computed(() => {
+  return locale.value === 'hr' ? 'HR' : 'EN'
+})
+
+function setLocale(l) {
+  locale.value = l
+  LocalStorage.set('locale', l)
+  setQuasarLang(l)
+}
 
 const linksList = [
   {

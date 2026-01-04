@@ -32,6 +32,7 @@
 
     <q-calendar-month
       v-model="selectedDate"
+      :locale="calendarLocale"
       bordered
       animated
       :day-min-height="110"
@@ -86,6 +87,10 @@ import ReservationDialog from './ReservationDialog.vue'
 
 const $q = useQuasar()
 const { t: $t } = useI18n()
+
+const { locale } = useI18n()
+
+const calendarLocale = computed(() => (locale.value === 'hr' ? 'hr-HR' : 'en-US'))
 
 const showDialog = ref(false)
 const startDate = ref(null)
