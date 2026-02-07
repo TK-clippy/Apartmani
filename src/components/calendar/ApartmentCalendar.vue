@@ -14,7 +14,6 @@
 
     <q-separator />
 
-    <!-- Month/Year Navigation -->
     <q-card-section class="row items-center q-py-sm">
       <q-btn
         flat
@@ -37,6 +36,7 @@
       animated
       :day-min-height="110"
       @click-date="onClickDate"
+      no-active-date
     >
       <template #day="{ scope }">
         <div
@@ -47,7 +47,6 @@
           }"
           :style="getDayContainerStyle(scope.timestamp.date)"
         >
-          <!-- background booking layer -->
           <div
             v-if="reservationsForDay(scope.timestamp.date).length"
             class="absolute-full"
@@ -80,15 +79,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useI18n } from 'vue-i18n'
+import { api } from 'boot/axios'
 import ReservationDialog from './ReservationDialog.vue'
 
 const $q = useQuasar()
-const { t: $t } = useI18n()
-
-const { locale } = useI18n()
+const { t: $t, locale } = useI18n()
 
 const calendarLocale = computed(() => (locale.value === 'hr' ? 'hr-HR' : 'en-US'))
 
@@ -96,41 +94,62 @@ const showDialog = ref(false)
 const startDate = ref(null)
 const endDate = ref(null)
 
-// Initialize to current date
-const today = new Date().toISOString().substring(0, 10)
+// Initialize strictly to YYYY-MM-DD local string
+const today = new Date().toLocaleDateString('en-CA') // Yields YYYY-MM-DD
 const selectedDate = ref(today)
-const selectedApartment = ref(1)
 
-const apartments = ref([
-  { id: 1, name: 'Apartman Ana' },
-  { id: 2, name: 'Apartman More' },
-])
+const apartments = ref([])
+const selectedApartment = ref(null)
+const reservations = ref([])
 
-const reservations = ref([
-  {
-    id: 1,
-    apartmentId: 1,
-    guestName: 'Marko Marković',
-    start: '2025-01-10',
-    end: '2025-01-14',
-  },
-  {
-    id: 2,
-    apartmentId: 1,
-    guestName: 'Ana Horvat',
-    start: '2025-01-18',
-    end: '2025-01-20',
-  },
-])
+function normalizeYmd(input) {
+  if (!input) return null
+  // This ensures we only take the YYYY-MM-DD part regardless of time/zone
+  const parts = String(input).match(/(\d{4})-(\d{2})-(\d{2})/)
+  return parts ? `${parts[1]}-${parts[2]}-${parts[3]}` : null
+}
 
-// Month navigation computed properties
-const currentYear = computed(() => {
-  return new Date(selectedDate.value).getFullYear()
-})
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
 
-const currentMonth = computed(() => {
-  return new Date(selectedDate.value).getMonth()
-})
+function addDaysUTC(ymd, days) {
+  const [y, m, d] = ymd.split('-').map((v) => parseInt(v, 10))
+  const date = new Date(Date.UTC(y, m - 1, d + days))
+  return date.toISOString().substring(0, 10)
+}
+
+function startOfMonthYmd(ymd) {
+  return ymd.substring(0, 8) + '01'
+}
+
+function firstDayNextMonthYmd(ymd) {
+  const [y, m] = ymd.split('-').map((v) => parseInt(v, 10))
+  const nextY = m === 12 ? y + 1 : y
+  const nextM = m === 12 ? 1 : m + 1
+  return `${nextY}-${pad2(nextM)}-01`
+}
+
+function mapReservationRow(row) {
+  const start = normalizeYmd(row.start_date)
+  const endExclusive = normalizeYmd(row.end_date)
+
+  // Visual inclusive end for the red bars
+  let endInclusive = addDaysUTC(endExclusive, -1)
+  if (endInclusive < start) endInclusive = start
+
+  return {
+    id: row.id,
+    apartmentId: row.apartment_id,
+    guestName: row.guest_name,
+    start,
+    endExclusive,
+    end: endInclusive,
+  }
+}
+
+const currentYear = computed(() => selectedDate.value.substring(0, 4))
+const currentMonth = computed(() => parseInt(selectedDate.value.substring(5, 7), 10) - 1)
 
 const currentMonthLabel = computed(() => {
   const monthKeys = [
@@ -151,182 +170,138 @@ const currentMonthLabel = computed(() => {
 })
 
 const isPreviousMonthDisabled = computed(() => {
-  const currentDate = new Date()
-  const selectedDateObj = new Date(selectedDate.value)
-
-  // Disable if we're viewing current month or earlier
-  return (
-    selectedDateObj.getFullYear() <= currentDate.getFullYear() &&
-    selectedDateObj.getMonth() <= currentDate.getMonth()
-  )
+  return selectedDate.value.substring(0, 7) <= today.substring(0, 7)
 })
 
 function previousMonth() {
-  const date = new Date(selectedDate.value)
-  date.setMonth(date.getMonth() - 1)
+  const [y, m, d] = selectedDate.value.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  date.setUTCMonth(date.getUTCMonth() - 1)
   selectedDate.value = date.toISOString().substring(0, 10)
 }
 
 function nextMonth() {
-  const date = new Date(selectedDate.value)
-  date.setMonth(date.getMonth() + 1)
+  const [y, m, d] = selectedDate.value.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  date.setUTCMonth(date.getUTCMonth() + 1)
   selectedDate.value = date.toISOString().substring(0, 10)
 }
+
+async function fetchApartments() {
+  const { data } = await api.get('/apartments')
+  apartments.value = Array.isArray(data) ? data : []
+  if (!selectedApartment.value && apartments.value.length) {
+    selectedApartment.value = apartments.value[0].id
+  }
+}
+
+async function fetchReservationsForVisibleMonth() {
+  if (!selectedApartment.value) return
+  const from = startOfMonthYmd(selectedDate.value)
+  const to = firstDayNextMonthYmd(selectedDate.value)
+
+  const { data } = await api.get('/reservations', {
+    params: { apartmentId: selectedApartment.value, from, to },
+  })
+  reservations.value = (Array.isArray(data) ? data : []).map(mapReservationRow)
+}
+
+watch(
+  [selectedApartment, () => selectedDate.value.substring(0, 7)],
+  fetchReservationsForVisibleMonth,
+  { flush: 'post' },
+)
+
+onMounted(async () => {
+  try {
+    await fetchApartments()
+    await fetchReservationsForVisibleMonth()
+  } catch (err) {
+    $q.notify({ type: 'negative', message: $t('failedToLoadData') })
+  }
+})
 
 function isPastDate(date) {
   return date < today
 }
 
 function reservationsForDay(date) {
-  return reservations.value.filter(
-    (r) => r.apartmentId === selectedApartment.value && date >= r.start && date <= r.end,
-  )
+  return reservations.value.filter((r) => date >= r.start && date <= r.end)
 }
 
 function getBookingLayerStyle(date) {
-  const dayRes = reservationsForDay(date)
-  if (!dayRes.length) return {}
+  const res = reservations.value
+  const starts = res.some((r) => r.start === date)
+  const ends = res.some((r) => r.end === date)
+  const middles = res.some((r) => date > r.start && date < r.end)
+  const hasCheckout = res.some((r) => r.endExclusive === date)
 
-  const starts = dayRes.some((r) => r.start === date)
-  const ends = dayRes.some((r) => r.end === date)
-  const middles = dayRes.some((r) => date > r.start && date < r.end)
-  const turnover = starts && ends && dayRes.length >= 2 && !middles
+  const turnover = starts && hasCheckout
 
   if (turnover) {
     return {
-      background: `linear-gradient(
-        135deg,
-        #e53935 0%,
-        #e53935 49%,
-        #fff 49%,
-        #fff 51%,
-        #e53935 51%,
-        #e53935 100%
-      )`,
-      borderRadius: '8px',
-      overflow: 'hidden',
+      background:
+        'linear-gradient(135deg, #e53935 0%, #e53935 48%, #fff 48%, #fff 52%, #e53935 52%, #e53935 100%)',
+      borderRadius: '4px',
     }
   }
-  if (middles) {
-    return {
-      background: '#e53935',
-      borderRadius: '8px',
-      overflow: 'hidden',
-    }
-  }
-  if (starts && !ends) {
-    return {
-      background: 'linear-gradient(135deg, #fff 0 50%, #e53935 50%)',
-      borderRadius: '8px',
-      overflow: 'hidden',
-    }
-  }
-  if (ends && !starts) {
-    return {
-      background: 'linear-gradient(135deg, #e53935 0 50%, #fff 50%)',
-      borderRadius: '8px',
-      overflow: 'hidden',
-    }
-  }
-  return {
-    background: '#e53935',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  }
+  if (middles) return { background: '#e53935' }
+  if (starts) return { background: 'linear-gradient(135deg, transparent 0 50%, #e53935 50%)' }
+  if (ends) return { background: 'linear-gradient(135deg, #e53935 0 50%, transparent 50%)' }
+
+  return {}
 }
 
 function getDayContainerStyle(date) {
-  if (isStart(date)) {
-    return {
-      background: 'linear-gradient(135deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%)',
-      borderRadius: '8px',
-      overflow: 'hidden',
-    }
-  }
-  if (isEnd(date)) {
-    return {
-      background: 'linear-gradient(315deg, transparent 50%, rgba(229, 57, 53, 0.6) 50%)',
-      borderRadius: '8px',
-      overflow: 'hidden',
-    }
-  }
+  if (isStart(date)) return { background: 'rgba(229, 57, 53, 0.2)' }
+  if (isEnd(date)) return { background: 'rgba(229, 57, 53, 0.2)' }
   return {}
 }
 
 function onClickDate({ scope }) {
   const date = scope.timestamp.date
+  if (isPastDate(date)) return
 
-  // Prevent booking in the past
-  if (isPastDate(date)) {
-    $q.notify({
-      type: 'negative',
-      message: $t('cannotBookPastDates'),
-      position: 'top',
-    })
-    return
-  }
+  const isOccupied = reservations.value.some((r) => date >= r.start && date < r.endExclusive)
+  if (isOccupied) return
 
-  // Check if date is occupied
-  const isOccupied = reservations.value.some(
-    (r) => r.apartmentId === selectedApartment.value && date >= r.start && date < r.end,
-  )
-
-  if (isOccupied) {
-    return
-  }
-
-  // First click → start
-  if (!startDate.value) {
+  if (!startDate.value || (startDate.value && endDate.value)) {
     startDate.value = date
     endDate.value = null
-    return
-  }
-
-  // Second click → end
-  if (!endDate.value && date > startDate.value) {
+  } else if (date > startDate.value) {
     endDate.value = date
     showDialog.value = true
-    return
+  } else {
+    startDate.value = date
   }
-
-  // Reset if clicked again
-  startDate.value = date
-  endDate.value = null
 }
 
-function addReservation(data) {
-  reservations.value.push({
-    id: Date.now(),
-    apartmentId: selectedApartment.value,
-    ...data,
-  })
-  startDate.value = null
-  endDate.value = null
+async function addReservation(data) {
+  try {
+    const payload = {
+      apartmentId: selectedApartment.value,
+      guestName: data.guestName,
+      startDate: startDate.value,
+      endDate: addDaysUTC(endDate.value, 1), // Checkout is Day + 1
+      guestsCount: data.guestsCount,
+      notes: data.notes,
+    }
+    await api.post('/reservations', payload)
+    await fetchReservationsForVisibleMonth()
+    startDate.value = null
+    endDate.value = null
+  } catch (err) {
+    $q.notify({ type: 'negative', message: $t('failedToSaveReservation') })
+  }
 }
 
 function isBetween(date) {
   return startDate.value && endDate.value && date > startDate.value && date < endDate.value
 }
-
 function isStart(date) {
   return date === startDate.value
 }
-
 function isEnd(date) {
   return date === endDate.value
 }
 </script>
-
-<style scoped>
-.past-date {
-  opacity: 0.4;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgba(0, 0, 0, 0.03) 10px,
-    rgba(0, 0, 0, 0.03) 20px
-  );
-}
-</style>

@@ -9,7 +9,7 @@
       <q-card-section class="q-gutter-sm">
         <q-input v-model="guestName" label="Ime gosta" dense autofocus />
 
-        <q-input v-model.number="persons" type="number" label="Broj gostiju" dense min="1" />
+        <q-input v-model.number="guestsCount" type="number" label="Broj gostiju" dense min="1" />
       </q-card-section>
 
       <q-card-actions align="right">
@@ -44,7 +44,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'save'])
 
 /**
- * v-model proxy (OBAVEZNO ovako)
+ * v-model proxy
  */
 const dialog = computed({
   get: () => props.modelValue,
@@ -55,7 +55,7 @@ const dialog = computed({
  * FORM STATE
  */
 const guestName = ref('')
-const persons = ref(1)
+const guestsCount = ref(1)
 
 /**
  * ACTIONS
@@ -67,13 +67,11 @@ function close() {
 function save() {
   emit('save', {
     guestName: guestName.value,
-    persons: persons.value,
-    start: props.start,
-    end: props.end,
+    guestsCount: guestsCount.value,
   })
 
   dialog.value = false
   guestName.value = ''
-  persons.value = 1
+  guestsCount.value = 1
 }
 </script>
