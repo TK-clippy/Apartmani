@@ -17,6 +17,15 @@
         <q-btn color="primary" label="Spremi" :disable="!guestName" @click="save" />
       </q-card-actions>
     </q-card>
+    <!-- Dark mode toggle -->
+    <q-btn
+      flat
+      dense
+      round
+      :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'"
+      class="qa-iconbtn q-ml-sm"
+      @click="toggleDark"
+    />
   </q-dialog>
 </template>
 

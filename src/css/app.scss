@@ -1,1 +1,232 @@
-// app global css in SCSS form
+/* ============================
+   Quasar Rentals — GNOME/Apple shell
+   Uses Quasar theme tokens (no hard color changes)
+   ============================ */
+
+:root {
+  --qa-radius: 14px;
+  --qa-radius-sm: 10px;
+
+  --qa-border-light: rgba(0, 0, 0, 0.08);
+  --qa-border-dark: rgba(255, 255, 255, 0.1);
+
+  --qa-surface-light: rgba(255, 255, 255, 0.78);
+  --qa-surface-dark: rgba(26, 26, 26, 0.72);
+
+  --qa-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  --qa-shadow-dark: 0 18px 36px rgba(0, 0, 0, 0.45);
+
+  --qa-blur: 14px;
+}
+
+body.body--light {
+  background: #f5f6f8;
+}
+
+body.body--dark {
+  background: #0f1114;
+}
+
+/* App shell */
+.qa-shell {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial;
+}
+
+/* Topbar */
+.qa-topbar {
+  background: transparent !important;
+  border-bottom: 1px solid var(--qa-border-light);
+  backdrop-filter: blur(var(--qa-blur));
+}
+body.body--dark .qa-topbar {
+  border-bottom: 1px solid var(--qa-border-dark);
+}
+
+.qa-toolbar {
+  min-height: 64px;
+  padding: 0 14px;
+}
+
+.qa-iconbtn {
+  border-radius: 999px;
+}
+.qa-iconbtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+body.body--dark .qa-iconbtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.qa-title {
+  margin-left: 10px;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.qa-title__app {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+.qa-title__hint {
+  font-size: 12px;
+  opacity: 0.68;
+  margin-top: 2px;
+}
+
+/* Search */
+.qa-search .q-field__control {
+  border-radius: 999px !important;
+}
+.qa-search {
+  width: min(520px, 44vw);
+}
+@media (max-width: 900px) {
+  .qa-search {
+    display: none;
+  }
+}
+
+/* Sidebar */
+.qa-sidebar {
+  background: transparent;
+  border-right: 1px solid var(--qa-border-light);
+  backdrop-filter: blur(var(--qa-blur));
+}
+body.body--dark .qa-sidebar {
+  border-right: 1px solid var(--qa-border-dark);
+}
+
+.qa-sidebar__top {
+  padding: 14px 14px 10px;
+}
+.qa-sep {
+  opacity: 0.6;
+}
+
+.qa-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.qa-brand__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--q-primary);
+  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.15);
+}
+.qa-brand__name {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.qa-brand__sub {
+  font-size: 12px;
+  opacity: 0.68;
+  margin-top: 1px;
+}
+
+.qa-primarybtn {
+  width: 100%;
+  border-radius: var(--qa-radius);
+  padding: 10px 12px;
+}
+
+/* Nav items */
+.qa-nav__item {
+  border-radius: var(--qa-radius-sm);
+  margin: 2px 8px;
+}
+.qa-nav__item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+body.body--dark .qa-nav__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* active route (Quasar adds .q-router-link--active) */
+.qa-nav__item.q-router-link--active {
+  background: rgba(25, 118, 210, 0.12);
+}
+body.body--dark .qa-nav__item.q-router-link--active {
+  background: rgba(25, 118, 210, 0.18);
+}
+.qa-nav__item.q-router-link--active .q-icon {
+  color: var(--q-primary);
+}
+
+/* Sidebar bottom */
+.qa-sidebar__bottom {
+  padding: 14px;
+}
+.qa-chiprow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.qa-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--qa-border-light);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+body.body--dark .qa-chip {
+  border: 1px solid var(--qa-border-dark);
+  background: rgba(25, 25, 25, 0.65);
+}
+.qa-muted {
+  opacity: 0.7;
+}
+
+/* Page container */
+.qa-page {
+  padding: 18px;
+}
+
+/* “Card surface” utility you can use on pages */
+.qa-card {
+  border-radius: var(--qa-radius);
+  border: 1px solid var(--qa-border-light);
+  background: var(--qa-surface-light);
+  backdrop-filter: blur(var(--qa-blur));
+  box-shadow: var(--qa-shadow);
+}
+body.body--dark .qa-card {
+  border: 1px solid var(--qa-border-dark);
+  background: var(--qa-surface-dark);
+  box-shadow: var(--qa-shadow-dark);
+}
+
+/* Menus look more mac/gnome */
+.qa-menu {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--qa-border-light);
+}
+body.body--dark .qa-menu {
+  border: 1px solid var(--qa-border-dark);
+}
+
+/* ============================
+   Topbar background control
+   ============================ */
+
+body.body--dark {
+  .q-layout__section--marginal.q-header,
+  .q-header,
+  .q-header .q-toolbar,
+  .qa-topbar {
+    background: var(--qa-surface-dark) !important;
+    border-bottom: 1px solid var(--qa-border-dark) !important;
+  }
+}

@@ -1,19 +1,62 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
+      <q-toolbar class="q-px-md">
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          @click="leftDrawerOpen = !leftDrawerOpen"
+        />
 
-        <q-toolbar-title> Apartmani </q-toolbar-title>
-        <!-- Language switcher -->
+        <div class="row items-center q-ml-sm">
+          <div class="text-weight-medium">Apartmani</div>
+          <q-badge class="q-ml-sm" rounded>internal</q-badge>
+        </div>
+
+        <q-space />
+
+        <!-- Desktop nav -->
+        <div class="gt-sm row items-center q-gutter-sm">
+          <q-btn flat label="Početna" to="/" />
+          <q-btn flat label="Kalendar" to="/calendar" />
+          <q-btn flat label="Apartmani" to="/apartments" />
+          <!-- Dark mode toggle -->
+          <q-btn
+            flat
+            dense
+            round
+            :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'"
+            class="qa-iconbtn q-ml-sm"
+            @click="toggleDark"
+          />
+        </div>
+
+        <!-- Language -->
         <q-btn-dropdown flat dense icon="language" :label="currentLangLabel">
           <q-list>
             <q-item clickable v-close-popup @click="setLocale('en-US')">
               <q-item-section>English</q-item-section>
             </q-item>
-
             <q-item clickable v-close-popup @click="setLocale('hr')">
               <q-item-section>Hrvatski</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+
+        <!-- User -->
+        <q-btn-dropdown flat dense icon="person">
+          <q-list>
+            <q-item clickable v-close-popup to="/login">
+              <q-item-section avatar><q-icon name="login" /></q-item-section>
+              <q-item-section>Login</q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="onLogout">
+              <q-item-section avatar><q-icon name="logout" /></q-item-section>
+              <q-item-section>Logout</q-item-section>
             </q-item>
           </q-list>
         </q-btn-dropdown>
@@ -21,10 +64,21 @@
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Essential Links </q-item-label>
+      <q-list padding>
+        <q-item clickable to="/" v-ripple>
+          <q-item-section avatar><q-icon name="home" /></q-item-section>
+          <q-item-section>Početna</q-item-section>
+        </q-item>
 
-        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
+        <q-item clickable to="/calendar" v-ripple>
+          <q-item-section avatar><q-icon name="calendar_month" /></q-item-section>
+          <q-item-section>Kalendar</q-item-section>
+        </q-item>
+
+        <q-item clickable to="/apartments" v-ripple>
+          <q-item-section avatar><q-icon name="apartment" /></q-item-section>
+          <q-item-section>Apartmani</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
@@ -35,73 +89,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { LocalStorage } from 'quasar'
-import { setQuasarLang } from 'src/boot/i18n'
+import { ref, computed } from 'vue'
+import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 
-const { locale } = useI18n()
-
-const currentLangLabel = computed(() => {
-  return locale.value === 'hr' ? 'HR' : 'EN'
-})
-
-function setLocale(l) {
-  locale.value = l
-  LocalStorage.set('locale', l)
-  setQuasarLang(l)
-}
-
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev',
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework',
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev',
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev',
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev',
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev',
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev',
-  },
-]
+const $q = useQuasar()
+const router = useRouter()
 
 const leftDrawerOpen = ref(false)
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value
+const currentLocale = ref('hr')
+const currentLangLabel = computed(() => (currentLocale.value === 'en-US' ? 'EN' : 'HR'))
+
+function setLocale(loc) {
+  currentLocale.value = loc
+}
+
+function onLogout() {
+  $q.notify({ message: 'Logout (auth uskoro)' })
+  router.push('/login')
+}
+
+function toggleDark() {
+  $q.dark.set(!$q.dark.isActive)
+  localStorage.setItem('dark', $q.dark.isActive ? '1' : '0')
 }
 </script>

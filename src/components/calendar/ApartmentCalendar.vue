@@ -58,12 +58,44 @@
           </div>
 
           <div
-            class="ellipsis text-weight-regular text-white text-caption"
             v-for="res in reservationsForDay(scope.timestamp.date)"
             :key="res.id"
-            style="z-index: 2; position: relative"
+            class="relative-position"
+            style="z-index: 3"
           >
-            {{ res.guestName }}
+            <div
+              v-if="shouldShowGuestName(scope.timestamp.date, res)"
+              class="ellipsis text-caption q-pl-xs"
+              :style="getNameStyle(scope.timestamp.date, res)"
+            >
+              {{ res.guestName }}
+            </div>
+
+            <div class="absolute-full cursor-pointer">
+              <q-tooltip
+                class="bg-grey-10 text-body2 shadow-4"
+                anchor="center middle"
+                self="center middle"
+                :offset="[0, 0]"
+                max-width="250px"
+              >
+                <div class="row items-center q-mb-xs">
+                  <q-icon name="person" size="xs" class="q-mr-xs text-primary" />
+                  <span class="text-weight-bold">{{ res.guestName }}</span>
+                </div>
+
+                <q-separator class="q-my-xs bg-grey-8" />
+
+                <div class="row items-center text-caption text-grey-4">
+                  <q-icon name="event" size="xs" class="q-mr-xs" />
+                  {{ formatNiceDate(res.start) }} &mdash; {{ formatNiceDate(res.endExclusive) }}
+                </div>
+
+                <div class="text-caption text-italic q-mt-xs text-grey-5" v-if="res.notes">
+                  "{{ res.notes }}"
+                </div>
+              </q-tooltip>
+            </div>
           </div>
         </div>
       </template>
@@ -102,11 +134,47 @@ const apartments = ref([])
 const selectedApartment = ref(null)
 const reservations = ref([])
 
-function normalizeYmd(input) {
-  if (!input) return null
-  // This ensures we only take the YYYY-MM-DD part regardless of time/zone
-  const parts = String(input).match(/(\d{4})-(\d{2})-(\d{2})/)
-  return parts ? `${parts[1]}-${parts[2]}-${parts[3]}` : null
+// Helper to format dates for the Tooltip (e.g. "Feb 12")
+function formatNiceDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
+}
+
+// LOGIC: When to show the name?
+function shouldShowGuestName(date, r) {
+  // 1. Always show on Start Date
+  if (date === r.start) return true
+
+  // 2. (Optional but recommended) Show on Monday if the reservation spans across weeks
+  // This prevents "mystery red blocks" on the second row of the calendar
+  const d = new Date(date)
+  // Assuming Monday is start of week (day 1). If Sunday is start, use 0.
+  if (d.getDay() === 1 && date > r.start && date < r.endExclusive) return true
+
+  return false
+}
+
+// LOGIC: Text color (Contrast handling)
+function getNameStyle(date, r) {
+  // On Check-in day, the "Red" is only in the bottom-right corner.
+  // The name sits in the top-left (white space). Use DARK text.
+  if (date === r.start) {
+    return {
+      color: '#000',
+      fontWeight: '600',
+      fontSize: '0.75rem',
+      paddingLeft: '2px', // push slightly from edge
+    }
+  }
+
+  // On Middle days, background is Red. Use WHITE text.
+  return {
+    color: '#fff',
+    fontWeight: '500',
+    fontSize: '0.75rem',
+    paddingLeft: '2px',
+  }
 }
 
 function pad2(n) {
@@ -131,12 +199,11 @@ function firstDayNextMonthYmd(ymd) {
 }
 
 function mapReservationRow(row) {
-  const start = normalizeYmd(row.start_date)
-  const endExclusive = normalizeYmd(row.end_date)
+  const start = row.start_date // already YYYY-MM-DD
+  const endExclusive = row.end_date
 
-  // Visual inclusive end for the red bars
-  let endInclusive = addDaysUTC(endExclusive, -1)
-  if (endInclusive < start) endInclusive = start
+  // inclusive visual end
+  const end = addDaysUTC(endExclusive, -1)
 
   return {
     id: row.id,
@@ -144,7 +211,7 @@ function mapReservationRow(row) {
     guestName: row.guest_name,
     start,
     endExclusive,
-    end: endInclusive,
+    end,
   }
 }
 
@@ -216,6 +283,7 @@ onMounted(async () => {
   try {
     await fetchApartments()
     await fetchReservationsForVisibleMonth()
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({ type: 'negative', message: $t('failedToLoadData') })
   }
@@ -226,17 +294,23 @@ function isPastDate(date) {
 }
 
 function reservationsForDay(date) {
-  return reservations.value.filter((r) => date >= r.start && date <= r.end)
+  // CHANGED: Use r.endExclusive instead of r.end.
+  // This allows the div to render on the checkout day (morning).
+  return reservations.value.filter((r) => date >= r.start && date <= r.endExclusive)
 }
 
 function getBookingLayerStyle(date) {
   const res = reservations.value
   const starts = res.some((r) => r.start === date)
-  const ends = res.some((r) => r.end === date)
-  const middles = res.some((r) => date > r.start && date < r.end)
-  const hasCheckout = res.some((r) => r.endExclusive === date)
 
-  const turnover = starts && hasCheckout
+  // CHANGED: Identify the actual checkout day for the visual cut
+  const isCheckoutDay = res.some((r) => r.endExclusive === date)
+
+  // CHANGED: A day is "Middle" (Full Red) if it is after start AND strictly before checkout
+  const middles = res.some((r) => date > r.start && date < r.endExclusive)
+
+  // Logic for turnover (Guest A leaves, Guest B arrives)
+  const turnover = starts && isCheckoutDay
 
   if (turnover) {
     return {
@@ -245,9 +319,12 @@ function getBookingLayerStyle(date) {
       borderRadius: '4px',
     }
   }
-  if (middles) return { background: '#e53935' }
+
+  if (middles) return { background: '#e53935' } // Full Red
   if (starts) return { background: 'linear-gradient(135deg, transparent 0 50%, #e53935 50%)' }
-  if (ends) return { background: 'linear-gradient(135deg, #e53935 0 50%, transparent 50%)' }
+
+  if (isCheckoutDay)
+    return { background: 'linear-gradient(135deg, #e53935 0 50%, transparent 50%)' }
 
   return {}
 }
@@ -290,6 +367,7 @@ async function addReservation(data) {
     await fetchReservationsForVisibleMonth()
     startDate.value = null
     endDate.value = null
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({ type: 'negative', message: $t('failedToSaveReservation') })
   }
