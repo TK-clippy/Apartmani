@@ -8,14 +8,16 @@ export async function getReservationsForApartment({ apartmentId, from, to }) {
       apartment_id,
       guest_name,
       start_date,
-      end_date
+      end_date,
+      guests_count,
+      notes
     FROM reservations
     WHERE apartment_id = ?
       AND start_date < ?
       AND end_date > ?
     ORDER BY start_date
     `,
-    [apartmentId, to, from]
+    [apartmentId, to, from],
   )
 
   return rows
@@ -42,7 +44,7 @@ export async function createReservation({
       endDate,
       guestsCount ?? null,
       notes ?? null,
-    ]
+    ],
   )
 
   return {
@@ -51,7 +53,47 @@ export async function createReservation({
     guestName,
     startDate,
     endDate,
-    guestsCount,
-    notes,
+    guestsCount: guestsCount ?? null,
+    notes: notes ?? null,
   }
+}
+
+export async function updateReservation({
+  id,
+  apartmentId,
+  guestName,
+  startDate,
+  endDate,
+  guestsCount,
+  notes,
+}) {
+  const [result] = await pool.query(
+    `
+    UPDATE reservations
+    SET
+      apartment_id = ?,
+      guest_name = ?,
+      start_date = ?,
+      end_date = ?,
+      guests_count = ?,
+      notes = ?
+    WHERE id = ?
+    `,
+    [
+      apartmentId,
+      guestName,
+      startDate,
+      endDate,
+      guestsCount ?? null,
+      notes ?? null,
+      id,
+    ],
+  )
+
+  return result.affectedRows
+}
+
+export async function deleteReservation(id) {
+  const [result] = await pool.query('DELETE FROM reservations WHERE id = ?', [id])
+  return result.affectedRows
 }

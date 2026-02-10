@@ -1,7 +1,19 @@
 export default {
   selectApartment: 'Select apartment',
-  cannotBookPastDates: 'You cannot book past dates',
   calendarReservations: 'Reservations calendar',
+
+  dateRange: 'Date range',
+  guests: 'Guests',
+  notes: 'Notes',
+
+  edit: 'Edit',
+  delete: 'Delete',
+
+  failedToLoadData: 'Failed to load data.',
+  failedToSaveReservation: 'Failed to save reservation.',
+  failedToUpdateReservation: 'Failed to update reservation.',
+  reservationDeleted: 'Reservation deleted.',
+  failedToDeleteReservation: 'Failed to delete reservation.',
 
   months: {
     january: 'January',

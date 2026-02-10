@@ -4,8 +4,10 @@
    ============================ */
 
 :root {
-  --qa-radius: 14px;
-  --qa-radius-sm: 10px;
+  /* GNOME/libadwaita-ish radii */
+  --qa-radius: 22px; /* cards, panels */
+  --qa-radius-sm: 16px; /* nav items, menus */
+  --qa-radius-xs: 12px; /* inputs, small elements */
 
   --qa-border-light: rgba(0, 0, 0, 0.08);
   --qa-border-dark: rgba(255, 255, 255, 0.1);
@@ -39,7 +41,68 @@ body.body--dark {
     Arial;
 }
 
-/* Topbar */
+/* ============================
+   GLOBAL Quasar “GNOME rounding”
+   ============================ */
+
+/* Cards + popovers + dialogs */
+.q-card,
+.q-menu,
+.q-dialog__inner > div {
+  border-radius: var(--qa-radius) !important;
+  overflow: hidden;
+}
+
+/* Make outlined/flat cards still feel like GNOME surfaces (subtle) */
+.q-card {
+  border: 1px solid var(--qa-border-light);
+  box-shadow: var(--qa-shadow);
+  background: var(--qa-surface-light);
+  backdrop-filter: blur(var(--qa-blur));
+}
+body.body--dark .q-card {
+  border: 1px solid var(--qa-border-dark);
+  box-shadow: var(--qa-shadow-dark);
+  background: var(--qa-surface-dark);
+}
+
+/* Menus/popovers (q-menu content) */
+.q-menu {
+  border: 1px solid var(--qa-border-light);
+  box-shadow: var(--qa-shadow);
+  backdrop-filter: blur(var(--qa-blur));
+}
+body.body--dark .q-menu {
+  border: 1px solid var(--qa-border-dark);
+  box-shadow: var(--qa-shadow-dark);
+}
+
+/* Dialog body */
+.q-dialog__inner > div {
+  border: 1px solid var(--qa-border-light);
+  box-shadow: var(--qa-shadow);
+  backdrop-filter: blur(var(--qa-blur));
+}
+body.body--dark .q-dialog__inner > div {
+  border: 1px solid var(--qa-border-dark);
+  box-shadow: var(--qa-shadow-dark);
+}
+
+/* Inputs: slightly rounder controls (keeps your existing design) */
+.q-field--outlined .q-field__control,
+.q-field--filled .q-field__control {
+  border-radius: var(--qa-radius-xs);
+}
+
+/* Buttons: slightly rounder by default (doesn't touch colors) */
+.q-btn {
+  border-radius: var(--qa-radius-xs);
+}
+
+/* ============================
+   Topbar
+   ============================ */
+
 .qa-topbar {
   background: transparent !important;
   border-bottom: 1px solid var(--qa-border-light);
@@ -94,7 +157,10 @@ body.body--dark .qa-iconbtn:hover {
   }
 }
 
-/* Sidebar */
+/* ============================
+   Sidebar (Drawer)
+   ============================ */
+
 .qa-sidebar {
   background: transparent;
   border-right: 1px solid var(--qa-border-light);
@@ -122,7 +188,7 @@ body.body--dark .qa-sidebar {
   height: 12px;
   border-radius: 999px;
   background: var(--q-primary);
-  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.15);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--q-primary) 18%, transparent);
 }
 .qa-brand__name {
   font-weight: 700;
@@ -136,14 +202,14 @@ body.body--dark .qa-sidebar {
 
 .qa-primarybtn {
   width: 100%;
-  border-radius: var(--qa-radius);
-  padding: 10px 12px;
+  border-radius: var(--qa-radius-sm);
+  padding: 12px 14px;
 }
 
 /* Nav items */
 .qa-nav__item {
   border-radius: var(--qa-radius-sm);
-  margin: 2px 8px;
+  margin: 4px 8px;
 }
 .qa-nav__item:hover {
   background: rgba(0, 0, 0, 0.05);
@@ -154,10 +220,10 @@ body.body--dark .qa-nav__item:hover {
 
 /* active route (Quasar adds .q-router-link--active) */
 .qa-nav__item.q-router-link--active {
-  background: rgba(25, 118, 210, 0.12);
+  background: color-mix(in srgb, var(--q-primary) 14%, transparent);
 }
 body.body--dark .qa-nav__item.q-router-link--active {
-  background: rgba(25, 118, 210, 0.18);
+  background: color-mix(in srgb, var(--q-primary) 20%, transparent);
 }
 .qa-nav__item.q-router-link--active .q-icon {
   color: var(--q-primary);
@@ -200,6 +266,7 @@ body.body--dark .qa-chip {
   background: var(--qa-surface-light);
   backdrop-filter: blur(var(--qa-blur));
   box-shadow: var(--qa-shadow);
+  overflow: hidden;
 }
 body.body--dark .qa-card {
   border: 1px solid var(--qa-border-dark);
@@ -209,7 +276,7 @@ body.body--dark .qa-card {
 
 /* Menus look more mac/gnome */
 .qa-menu {
-  border-radius: 12px;
+  border-radius: var(--qa-radius-sm);
   overflow: hidden;
   border: 1px solid var(--qa-border-light);
 }
@@ -218,7 +285,7 @@ body.body--dark .qa-menu {
 }
 
 /* ============================
-   Topbar background control
+   Topbar background control (dark)
    ============================ */
 
 body.body--dark {

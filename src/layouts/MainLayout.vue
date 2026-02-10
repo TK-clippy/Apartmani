@@ -1,38 +1,36 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar class="q-px-md">
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="leftDrawerOpen = !leftDrawerOpen"
-        />
-
-        <div class="row items-center q-ml-sm">
+        <!-- Left / Brand -->
+        <div class="row items-center q-gutter-sm">
           <div class="text-weight-medium">Apartmani</div>
-          <q-badge class="q-ml-sm" rounded>internal</q-badge>
+          <q-badge rounded>internal</q-badge>
         </div>
+
+        <!-- Tabs (u ISTOM headeru) -->
+        <q-tabs
+          class="q-ml-lg qa-header-tabs"
+          shrink
+          dense
+          indicator-color="primary"
+          active-color="primary"
+        >
+          <q-route-tab to="/" label="Početna" />
+          <q-route-tab to="/calendar" label="Kalendar" />
+          <q-route-tab to="/apartments" label="Apartmani" />
+        </q-tabs>
 
         <q-space />
 
-        <!-- Desktop nav -->
-        <div class="gt-sm row items-center q-gutter-sm">
-          <q-btn flat label="Početna" to="/" />
-          <q-btn flat label="Kalendar" to="/calendar" />
-          <q-btn flat label="Apartmani" to="/apartments" />
-          <!-- Dark mode toggle -->
-          <q-btn
-            flat
-            dense
-            round
-            :icon="$q.dark.isActive ? 'dark_mode' : 'light_mode'"
-            class="qa-iconbtn q-ml-sm"
-            @click="toggleDark"
-          />
-        </div>
+        <!-- Dark mode toggle (DESNO) -->
+        <q-toggle
+          v-model="isDark"
+          checked-icon="dark_mode"
+          unchecked-icon="light_mode"
+          dense
+          class="q-mr-sm"
+        />
 
         <!-- Language -->
         <q-btn-dropdown flat dense icon="language" :label="currentLangLabel">
@@ -47,7 +45,7 @@
         </q-btn-dropdown>
 
         <!-- User -->
-        <q-btn-dropdown flat dense icon="person">
+        <q-btn-dropdown flat dense icon="person" class="q-ml-sm">
           <q-list>
             <q-item clickable v-close-popup to="/login">
               <q-item-section avatar><q-icon name="login" /></q-item-section>
@@ -63,55 +61,61 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list padding>
-        <q-item clickable to="/" v-ripple>
-          <q-item-section avatar><q-icon name="home" /></q-item-section>
-          <q-item-section>Početna</q-item-section>
-        </q-item>
-
-        <q-item clickable to="/calendar" v-ripple>
-          <q-item-section avatar><q-icon name="calendar_month" /></q-item-section>
-          <q-item-section>Kalendar</q-item-section>
-        </q-item>
-
-        <q-item clickable to="/apartments" v-ripple>
-          <q-item-section avatar><q-icon name="apartment" /></q-item-section>
-          <q-item-section>Apartmani</q-item-section>
-        </q-item>
-      </q-list>
-    </q-drawer>
-
-    <q-page-container>
+    <q-page-container class="qa-page">
       <router-view />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const $q = useQuasar()
 const router = useRouter()
+const { locale } = useI18n()
 
-const leftDrawerOpen = ref(false)
-
-const currentLocale = ref('hr')
-const currentLangLabel = computed(() => (currentLocale.value === 'en-US' ? 'EN' : 'HR'))
+/** Locale label (pravi i18n) */
+const currentLangLabel = computed(() => (locale.value === 'en-US' ? 'EN' : 'HR'))
 
 function setLocale(loc) {
-  currentLocale.value = loc
+  locale.value = loc
+  localStorage.setItem('locale', loc)
 }
+
+/** Dark toggle: inicijalno iz localStorage (fallback na $q.dark) */
+const savedDark = localStorage.getItem('dark')
+const isDark = ref(savedDark ? savedDark === '1' : $q.dark.isActive)
+
+/** Sinkronizacija toggle -> Quasar dark */
+watch(isDark, (val) => {
+  $q.dark.set(!!val)
+  localStorage.setItem('dark', val ? '1' : '0')
+})
 
 function onLogout() {
   $q.notify({ message: 'Logout (auth uskoro)' })
   router.push('/login')
 }
-
-function toggleDark() {
-  $q.dark.set(!$q.dark.isActive)
-  localStorage.setItem('dark', $q.dark.isActive ? '1' : '0')
-}
 </script>
+
+<style scoped>
+/* Tabovi da ne "nestanu" na active (sve bijelo, inactive malo fade) */
+.qa-header-tabs :deep(.q-tab) {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.qa-header-tabs :deep(.q-tab--active) {
+  color: rgba(255, 255, 255, 1) !important;
+  font-weight: 650;
+}
+
+/* indikator tanak i clean */
+.qa-header-tabs :deep(.q-tabs__indicator) {
+  height: 2px;
+  border-radius: 2px;
+  opacity: 0.95;
+}
+</style>

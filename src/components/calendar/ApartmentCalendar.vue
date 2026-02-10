@@ -1,5 +1,5 @@
 <template>
-  <q-card>
+  <q-card class="qa-card qa-calendar-card">
     <q-card-section>
       <q-select
         v-model="selectedApartment"
@@ -30,6 +30,7 @@
     <q-separator />
 
     <q-calendar-month
+      class="qa-calendar"
       v-model="selectedDate"
       :locale="calendarLocale"
       bordered
@@ -40,17 +41,20 @@
     >
       <template #day="{ scope }">
         <div
-          class="q-pa-xs relative-position full-height overflow-hidden"
+          class="qa-day q-pa-xs relative-position full-height overflow-hidden"
           :class="{
-            'bg-red-1': isBetween(scope.timestamp.date),
-            'past-date': isPastDate(scope.timestamp.date),
+            'qa-day--range': isBetween(scope.timestamp.date),
+            'qa-day--past': isPastDate(scope.timestamp.date),
+            'qa-day--start': isStart(scope.timestamp.date),
+            'qa-day--end': isEnd(scope.timestamp.date),
           }"
           :style="getDayContainerStyle(scope.timestamp.date)"
         >
           <div
             v-if="reservationsForDay(scope.timestamp.date).length"
-            class="absolute-full"
+            class="absolute-full cursor-pointer"
             :style="getBookingLayerStyle(scope.timestamp.date)"
+            @click.stop="openReservationActions(scope.timestamp.date)"
           ></div>
 
           <div class="text-caption text-grey-7 q-mb-xs" style="z-index: 2; position: relative">
@@ -66,35 +70,9 @@
             <div
               v-if="shouldShowGuestName(scope.timestamp.date, res)"
               class="ellipsis text-caption q-pl-xs"
-              :style="getNameStyle(scope.timestamp.date, res)"
+              :style="getNameStyle()"
             >
               {{ res.guestName }}
-            </div>
-
-            <div class="absolute-full cursor-pointer">
-              <q-tooltip
-                class="bg-grey-10 text-body2 shadow-4"
-                anchor="center middle"
-                self="center middle"
-                :offset="[0, 0]"
-                max-width="250px"
-              >
-                <div class="row items-center q-mb-xs">
-                  <q-icon name="person" size="xs" class="q-mr-xs text-primary" />
-                  <span class="text-weight-bold">{{ res.guestName }}</span>
-                </div>
-
-                <q-separator class="q-my-xs bg-grey-8" />
-
-                <div class="row items-center text-caption text-grey-4">
-                  <q-icon name="event" size="xs" class="q-mr-xs" />
-                  {{ formatNiceDate(res.start) }} &mdash; {{ formatNiceDate(res.endExclusive) }}
-                </div>
-
-                <div class="text-caption text-italic q-mt-xs text-grey-5" v-if="res.notes">
-                  "{{ res.notes }}"
-                </div>
-              </q-tooltip>
             </div>
           </div>
         </div>
@@ -105,8 +83,55 @@
       v-model="showDialog"
       :start="startDate"
       :end="endDate"
-      @save="addReservation"
+      :reservation="editingReservation"
+      @save="handleReservationSave"
     />
+
+    <q-dialog v-model="showResActions">
+      <q-card class="qa-card" style="min-width: 380px; max-width: 92vw">
+        <q-card-section class="row items-center">
+          <div>
+            <div class="text-h6">{{ selectedReservation?.guestName }}</div>
+            <div class="text-caption text-grey-6">
+              {{ $t('calendarReservations') }}
+            </div>
+          </div>
+          <q-space />
+          <q-btn flat round icon="close" v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section v-if="selectedReservation">
+          <div class="row q-col-gutter-md">
+            <div class="col-12">
+              <div class="text-caption text-grey-6">{{ $t('dateRange') }}</div>
+              <div class="text-body2">
+                {{ formatNiceDate(selectedReservation.start) }} —
+                {{ formatNiceDate(selectedReservation.endExclusive) }}
+              </div>
+            </div>
+
+            <div class="col-12" v-if="selectedReservation.guestsCount != null">
+              <div class="text-caption text-grey-6">{{ $t('guests') }}</div>
+              <div class="text-body2">{{ selectedReservation.guestsCount }}</div>
+            </div>
+
+            <div class="col-12" v-if="selectedReservation.notes">
+              <div class="text-caption text-grey-6">{{ $t('notes') }}</div>
+              <div class="text-body2">"{{ selectedReservation.notes }}"</div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right">
+          <q-btn flat color="negative" :label="$t('delete')" @click="confirmDelete" />
+          <q-btn unelevated color="primary" :label="$t('edit')" @click="openEdit" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-card>
 </template>
 
@@ -123,57 +148,75 @@ const { t: $t, locale } = useI18n()
 const calendarLocale = computed(() => (locale.value === 'hr' ? 'hr-HR' : 'en-US'))
 
 const showDialog = ref(false)
-const startDate = ref(null)
-const endDate = ref(null)
+const startDate = ref(null) // YYYY-MM-DD (UI inclusive start)
+const endDate = ref(null) // YYYY-MM-DD (UI inclusive end)
 
-// Initialize strictly to YYYY-MM-DD local string
-const today = new Date().toLocaleDateString('en-CA') // Yields YYYY-MM-DD
+const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD
 const selectedDate = ref(today)
 
 const apartments = ref([])
 const selectedApartment = ref(null)
 const reservations = ref([])
 
-// Helper to format dates for the Tooltip (e.g. "Feb 12")
+// Admin actions dialog
+const showResActions = ref(false)
+const selectedReservation = ref(null)
+
+// Unified dialog (create/edit)
+const editingReservation = ref(null)
+
+/* i18n month keys (must match your months.* translations) */
+const monthKeys = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+]
+
+/** Tooltip date: use i18n months, parse YYYY-MM-DD correctly */
 function formatNiceDate(dateStr) {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
+  const [, mStr, dStr] = dateStr.split('-') // YYYY-MM-DD
+  const m = parseInt(mStr, 10)
+  const d = parseInt(dStr, 10)
+
+  const monthName = $t(`months.${monthKeys[m - 1]}`)
+  return locale.value === 'hr' ? `${d}. ${monthName}` : `${monthName} ${d}`
 }
 
-// LOGIC: When to show the name?
-function shouldShowGuestName(date, r) {
-  // 1. Always show on Start Date
-  if (date === r.start) return true
+/** Name label: show on 2nd day if possible, otherwise on start day */
+function labelDayForReservation(r) {
+  const secondDay = addDaysUTC(r.start, 1)
+  if (secondDay < r.endExclusive) return secondDay
+  return r.start
+}
 
-  // 2. (Optional but recommended) Show on Monday if the reservation spans across weeks
-  // This prevents "mystery red blocks" on the second row of the calendar
+function shouldShowGuestName(date, r) {
+  if (date === labelDayForReservation(r)) return true
+
+  // optional: show on Monday if spanning weeks
   const d = new Date(date)
-  // Assuming Monday is start of week (day 1). If Sunday is start, use 0.
   if (d.getDay() === 1 && date > r.start && date < r.endExclusive) return true
 
   return false
 }
 
-// LOGIC: Text color (Contrast handling)
-function getNameStyle(date, r) {
-  // On Check-in day, the "Red" is only in the bottom-right corner.
-  // The name sits in the top-left (white space). Use DARK text.
-  if (date === r.start) {
-    return {
-      color: '#000',
-      fontWeight: '600',
-      fontSize: '0.75rem',
-      paddingLeft: '2px', // push slightly from edge
-    }
-  }
-
-  // On Middle days, background is Red. Use WHITE text.
+/** ALL WHITE names + readable */
+function getNameStyle() {
   return {
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: '0.75rem',
     paddingLeft: '2px',
+    textShadow: '0 1px 2px rgba(0,0,0,.35)',
   }
 }
 
@@ -199,16 +242,16 @@ function firstDayNextMonthYmd(ymd) {
 }
 
 function mapReservationRow(row) {
-  const start = row.start_date // already YYYY-MM-DD
-  const endExclusive = row.end_date
-
-  // inclusive visual end
-  const end = addDaysUTC(endExclusive, -1)
+  const start = row.start_date // YYYY-MM-DD
+  const endExclusive = row.end_date // YYYY-MM-DD (checkout day)
+  const end = addDaysUTC(endExclusive, -1) // inclusive end for visuals
 
   return {
     id: row.id,
     apartmentId: row.apartment_id,
     guestName: row.guest_name,
+    guestsCount: row.guests_count ?? row.guestsCount ?? null,
+    notes: row.notes ?? null,
     start,
     endExclusive,
     end,
@@ -218,27 +261,11 @@ function mapReservationRow(row) {
 const currentYear = computed(() => selectedDate.value.substring(0, 4))
 const currentMonth = computed(() => parseInt(selectedDate.value.substring(5, 7), 10) - 1)
 
-const currentMonthLabel = computed(() => {
-  const monthKeys = [
-    'january',
-    'february',
-    'march',
-    'april',
-    'may',
-    'june',
-    'july',
-    'august',
-    'september',
-    'october',
-    'november',
-    'december',
-  ]
-  return $t(`months.${monthKeys[currentMonth.value]}`)
-})
+const currentMonthLabel = computed(() => $t(`months.${monthKeys[currentMonth.value]}`))
 
-const isPreviousMonthDisabled = computed(() => {
-  return selectedDate.value.substring(0, 7) <= today.substring(0, 7)
-})
+const isPreviousMonthDisabled = computed(
+  () => selectedDate.value.substring(0, 7) <= today.substring(0, 7),
+)
 
 function previousMonth() {
   const [y, m, d] = selectedDate.value.split('-').map(Number)
@@ -270,6 +297,7 @@ async function fetchReservationsForVisibleMonth() {
   const { data } = await api.get('/reservations', {
     params: { apartmentId: selectedApartment.value, from, to },
   })
+
   reservations.value = (Array.isArray(data) ? data : []).map(mapReservationRow)
 }
 
@@ -283,7 +311,6 @@ onMounted(async () => {
   try {
     await fetchApartments()
     await fetchReservationsForVisibleMonth()
-    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({ type: 'negative', message: $t('failedToLoadData') })
   }
@@ -294,44 +321,75 @@ function isPastDate(date) {
 }
 
 function reservationsForDay(date) {
-  // CHANGED: Use r.endExclusive instead of r.end.
-  // This allows the div to render on the checkout day (morning).
+  // include checkout day (endExclusive) for the "cut" visuals
   return reservations.value.filter((r) => date >= r.start && date <= r.endExclusive)
 }
 
+function openReservationActions(date) {
+  const list = reservationsForDay(date)
+  if (!list.length) return
+  selectedReservation.value = list[0]
+  showResActions.value = true
+}
+
+function openEdit() {
+  if (!selectedReservation.value) return
+
+  // set edit target
+  editingReservation.value = selectedReservation.value
+
+  // set dialog dates (UI expects inclusive end)
+  startDate.value = selectedReservation.value.start
+  endDate.value = addDaysUTC(selectedReservation.value.endExclusive, -1)
+
+  showResActions.value = false
+  showDialog.value = true
+}
+
+async function confirmDelete() {
+  const id = selectedReservation.value?.id
+  console.log('DELETE clicked id:', id)
+  if (!id) return
+
+  await handleReservationDelete(id)
+  showResActions.value = false
+  selectedReservation.value = null
+}
+
+/** Booking layer visuals (uses Quasar theme tokens) */
 function getBookingLayerStyle(date) {
   const res = reservations.value
   const starts = res.some((r) => r.start === date)
-
-  // CHANGED: Identify the actual checkout day for the visual cut
   const isCheckoutDay = res.some((r) => r.endExclusive === date)
-
-  // CHANGED: A day is "Middle" (Full Red) if it is after start AND strictly before checkout
   const middles = res.some((r) => date > r.start && date < r.endExclusive)
 
-  // Logic for turnover (Guest A leaves, Guest B arrives)
   const turnover = starts && isCheckoutDay
+  const C = 'var(--q-primary)'
 
   if (turnover) {
     return {
-      background:
-        'linear-gradient(135deg, #e53935 0%, #e53935 48%, #fff 48%, #fff 52%, #e53935 52%, #e53935 100%)',
-      borderRadius: '4px',
+      background: `linear-gradient(135deg,
+        ${C} 0%, ${C} 48%,
+        transparent 48%, transparent 52%,
+        ${C} 52%, ${C} 100%)`,
+      borderRadius: 'var(--qa-radius-xs)',
+      opacity: '0.95',
     }
   }
 
-  if (middles) return { background: '#e53935' } // Full Red
-  if (starts) return { background: 'linear-gradient(135deg, transparent 0 50%, #e53935 50%)' }
-
+  if (middles) return { background: C, opacity: '0.9' }
+  if (starts)
+    return { background: `linear-gradient(135deg, transparent 0 50%, ${C} 50%)`, opacity: '0.95' }
   if (isCheckoutDay)
-    return { background: 'linear-gradient(135deg, #e53935 0 50%, transparent 50%)' }
+    return { background: `linear-gradient(135deg, ${C} 0 50%, transparent 50%)`, opacity: '0.95' }
 
   return {}
 }
 
 function getDayContainerStyle(date) {
-  if (isStart(date)) return { background: 'rgba(229, 57, 53, 0.2)' }
-  if (isEnd(date)) return { background: 'rgba(229, 57, 53, 0.2)' }
+  if (isStart(date) || isEnd(date)) {
+    return { background: 'color-mix(in srgb, var(--q-primary) 12%, transparent)' }
+  }
   return {}
 }
 
@@ -342,10 +400,13 @@ function onClickDate({ scope }) {
   const isOccupied = reservations.value.some((r) => date >= r.start && date < r.endExclusive)
   if (isOccupied) return
 
+  // create mode
   if (!startDate.value || (startDate.value && endDate.value)) {
+    editingReservation.value = null
     startDate.value = date
     endDate.value = null
   } else if (date > startDate.value) {
+    editingReservation.value = null
     endDate.value = date
     showDialog.value = true
   } else {
@@ -353,23 +414,47 @@ function onClickDate({ scope }) {
   }
 }
 
-async function addReservation(data) {
+/**
+ * Unified SAVE handler for ReservationDialog (create or edit)
+ * payload: { id?, guestName, guestsCount, notes, start, end }  // end is inclusive in UI
+ */
+async function handleReservationSave(payload) {
   try {
-    const payload = {
+    const body = {
       apartmentId: selectedApartment.value,
-      guestName: data.guestName,
-      startDate: startDate.value,
-      endDate: addDaysUTC(endDate.value, 1), // Checkout is Day + 1
-      guestsCount: data.guestsCount,
-      notes: data.notes,
+      guestName: payload.guestName,
+      startDate: payload.start,
+      endDate: addDaysUTC(payload.end, 1), // checkout exclusive
+      guestsCount: payload.guestsCount,
+      notes: payload.notes,
     }
-    await api.post('/reservations', payload)
+
+    if (payload.id) {
+      await api.put(`/reservations/${payload.id}`, body)
+    } else {
+      await api.post('/reservations', body)
+    }
+
     await fetchReservationsForVisibleMonth()
     startDate.value = null
     endDate.value = null
-    // eslint-disable-next-line no-unused-vars
+    editingReservation.value = null
   } catch (err) {
-    $q.notify({ type: 'negative', message: $t('failedToSaveReservation') })
+    $q.notify({
+      type: 'negative',
+      message: payload.id ? $t('failedToUpdateReservation') : $t('failedToSaveReservation'),
+    })
+  }
+}
+
+async function handleReservationDelete(id) {
+  try {
+    await api.delete(`/reservations/${id}`)
+    await fetchReservationsForVisibleMonth()
+    editingReservation.value = null
+    $q.notify({ type: 'positive', message: $t('reservationDeleted') })
+  } catch (err) {
+    $q.notify({ type: 'negative', message: $t('failedToDeleteReservation') })
   }
 }
 
@@ -383,3 +468,48 @@ function isEnd(date) {
   return date === endDate.value
 }
 </script>
+
+<style scoped>
+.qa-calendar-card {
+  padding: 6px;
+}
+
+.qa-calendar :deep(.q-calendar-month) {
+  border-radius: var(--qa-radius);
+}
+
+.qa-day {
+  border-radius: var(--qa-radius-xs);
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.qa-day--past {
+  opacity: 0.55;
+  filter: grayscale(0.15);
+}
+
+.qa-day--range {
+  background: color-mix(in srgb, var(--q-primary) 10%, transparent);
+}
+
+.qa-day--start,
+.qa-day--end {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--q-primary) 28%, transparent) inset;
+}
+
+.qa-calendar :deep(.q-calendar-month__day) {
+  padding: 6px;
+}
+
+.qa-calendar :deep(.q-calendar-month__day-label) {
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.qa-calendar :deep(.q-tooltip) {
+  border-radius: var(--qa-radius-sm);
+}
+</style>
