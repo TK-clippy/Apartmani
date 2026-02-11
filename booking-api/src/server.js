@@ -5,6 +5,8 @@ import dotenv from 'dotenv'
 
 import apartmentsRoutes from './routes/apartments.routes.js'
 import reservationsRoutes from './routes/reservations.routes.js'
+import authRoutes from './routes/auth.routes.js'
+import { requireAuth } from './middleware/auth.middleware.js'
 
 dotenv.config()
 
@@ -23,6 +25,10 @@ app.get('/health', (req, res) => res.json({ ok: true }))
 
 app.use('/apartments', apartmentsRoutes)
 app.use('/reservations', reservationsRoutes)
+app.use('/auth', authRoutes)
+
+app.use('/apartments', requireAuth, apartmentsRoutes)
+app.use('/reservations', requireAuth, reservationsRoutes)
 
 // basic error handler
 app.use((err, req, res, _next) => {
