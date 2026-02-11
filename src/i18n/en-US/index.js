@@ -42,6 +42,20 @@ export default {
   tooManyGuests:
     'Too many guests ({count}). Apartment capacity is {capacity}.',
 
+  newReservation: 'New reservation',
+  reservationPeriod: 'Period',
+
+  guestName: 'Guest name',
+  guestsCount: 'Number of guests',
+  note: 'Notes',
+
+  cancel: 'Cancel',
+  save: 'Save',
+
+  deleteApartmentTitle: 'Delete apartment',
+  deleteApartmentConfirm: 'Do you want to delete this apartment?',
+  deleted: 'Deleted',
+
   /* ============================
      Dashboard (Index / Dashboard page)
      ============================ */

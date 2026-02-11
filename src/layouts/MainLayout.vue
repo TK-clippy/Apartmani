@@ -47,12 +47,12 @@
         <!-- User -->
         <q-btn-dropdown flat dense icon="person" class="q-ml-sm">
           <q-list>
-            <q-item clickable v-close-popup to="/login">
+            <q-item v-if="!auth.isAuthed" clickable v-close-popup to="/login">
               <q-item-section avatar><q-icon name="login" /></q-item-section>
               <q-item-section>Login</q-item-section>
             </q-item>
 
-            <q-item clickable v-close-popup @click="onLogout">
+            <q-item v-else clickable v-close-popup @click="onLogout">
               <q-item-section avatar><q-icon name="logout" /></q-item-section>
               <q-item-section>Logout</q-item-section>
             </q-item>
@@ -72,9 +72,12 @@ import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from 'src/stores/auth.store'
 
 const $q = useQuasar()
 const router = useRouter()
+const auth = useAuthStore()
+
 const { locale } = useI18n()
 
 /** Locale label (pravi i18n) */
@@ -96,8 +99,8 @@ watch(isDark, (val) => {
 })
 
 function onLogout() {
-  $q.notify({ message: 'Logout (auth uskoro)' })
-  router.push('/login')
+  auth.logout()
+  router.replace('/login')
 }
 </script>
 

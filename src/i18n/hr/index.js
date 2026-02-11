@@ -42,6 +42,21 @@ export default {
   tooManyGuests:
     'Previše gostiju ({count}). Kapacitet apartmana je {capacity}.',
 
+  newReservation: 'Nova rezervacija',
+  reservationPeriod: 'Razdoblje',
+
+  guestName: 'Ime gosta',
+  guestsCount: 'Broj gostiju',
+  note: 'Napomena',
+
+  cancel: 'Odustani',
+  save: 'Spremi',
+
+  deleteApartmentTitle: 'Brisanje apartmana',
+  deleteApartmentConfirm: 'Želiš li obrisati ovaj apartman?',
+  deleted: 'Obrisano',
+
+
   /* ============================
       Dashboard (Index / Dashboard page)
      ============================ */
