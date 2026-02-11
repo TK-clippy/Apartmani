@@ -1,10 +1,7 @@
 export default {
-  selectApartment: 'Odaberi apartman',
-  calendarReservations: 'Kalendar rezervacija',
-
-  dateRange: 'Datumi',
-  guests: 'Gosti',
-  notes: 'Napomena',
+  /* ============================
+      GLOBAL / SHARED (više stranica)
+     ============================ */
 
   edit: 'Uredi',
   delete: 'Obriši',
@@ -15,12 +12,47 @@ export default {
   reservationDeleted: 'Rezervacija obrisana.',
   failedToDeleteReservation: 'Brisanje rezervacije nije uspjelo.',
 
-  // dashboard
+  months: {
+    // 👉 koristi se u ApartmentsCalendar.vue
+    january: 'Siječanj',
+    february: 'Veljača',
+    march: 'Ožujak',
+    april: 'Travanj',
+    may: 'Svibanj',
+    june: 'Lipanj',
+    july: 'Srpanj',
+    august: 'Kolovoz',
+    september: 'Rujan',
+    october: 'Listopad',
+    november: 'Studeni',
+    december: 'Prosinac',
+  },
+
+  /* ============================
+      ApartmentsCalendar.vue
+     ============================ */
+
+  selectApartment: 'Odaberi apartman',
+  calendarReservations: 'Kalendar rezervacija',
+
+  dateRange: 'Datumi',
+  guests: 'Gosti',
+  notes: 'Napomena',
+
+  tooManyGuests:
+    'Previše gostiju ({count}). Kapacitet apartmana je {capacity}.',
+
+  /* ============================
+      Dashboard (Index / Dashboard page)
+     ============================ */
+
   dashboardTitle: 'Pregled',
-  dashboardSubtitle: 'Brzi pristup kalendaru, rezervacijama i današnjim promjenama.',
+  dashboardSubtitle:
+    'Brzi pristup kalendaru, rezervacijama i današnjim promjenama.',
 
   occupancyCalendar: 'Kalendar zauzetosti',
-  occupancyCalendarHint: 'Pregled po apartmanu i mjesecu — check-in / checkout logika.',
+  occupancyCalendarHint:
+    'Pregled po apartmanu i mjesecu — check-in / checkout logika.',
   openCalendar: 'Otvori kalendar',
 
   arrivalsToday: 'Dolasci danas',
@@ -43,22 +75,23 @@ export default {
   openApartments: 'Otvori apartmane',
 
   recentActivity: 'Zadnje aktivnosti',
-  recentActivityHint: 'zadnje dodane ili izmijenjene rezervacije',
+  recentActivityHint:
+    'zadnje dodane ili izmijenjene rezervacije',
   noActivity: 'Još nema aktivnosti za prikaz.',
   refresh: 'Osvježi',
 
-  months: {
-    january: 'Siječanj',
-    february: 'Veljača',
-    march: 'Ožujak',
-    april: 'Travanj',
-    may: 'Svibanj',
-    june: 'Lipanj',
-    july: 'Srpanj',
-    august: 'Kolovoz',
-    september: 'Rujan',
-    october: 'Listopad',
-    november: 'Studeni',
-    december: 'Prosinac',
-  },
+  /* ============================
+      ApartmentsPage.vue
+     ============================ */
+
+  apartments: 'Apartmani',
+  apartmentsHint: 'Popis apartmana i osnovni detalji.',
+  addApartment: 'Dodaj apartman',
+  apartmentDetails: 'Detalji apartmana',
+  noApartments: 'Nema apartmana.',
+  search: 'Pretraži…',
+  name: 'Naziv',
+  capacity: 'Kapacitet',
+  createdAt: 'Kreirano',
+  loginRequired: 'Potrebna je prijava (auth-first).',
 }

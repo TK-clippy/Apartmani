@@ -1,10 +1,7 @@
 export default {
-  selectApartment: 'Select apartment',
-  calendarReservations: 'Reservations calendar',
-
-  dateRange: 'Date range',
-  guests: 'Guests',
-  notes: 'Notes',
+  /* ============================
+     GLOBAL / SHARED (used across pages)
+     ============================ */
 
   edit: 'Edit',
   delete: 'Delete',
@@ -15,12 +12,47 @@ export default {
   reservationDeleted: 'Reservation deleted.',
   failedToDeleteReservation: 'Failed to delete reservation.',
 
-  // dashboard
+  months: {
+    // Used in ApartmentsCalendar.vue
+    january: 'January',
+    february: 'February',
+    march: 'March',
+    april: 'April',
+    may: 'May',
+    june: 'June',
+    july: 'July',
+    august: 'August',
+    september: 'September',
+    october: 'October',
+    november: 'November',
+    december: 'December',
+  },
+
+  /* ============================
+     ApartmentsCalendar.vue
+     ============================ */
+
+  selectApartment: 'Select apartment',
+  calendarReservations: 'Reservation calendar',
+
+  dateRange: 'Dates',
+  guests: 'Guests',
+  notes: 'Notes',
+
+  tooManyGuests:
+    'Too many guests ({count}). Apartment capacity is {capacity}.',
+
+  /* ============================
+     Dashboard (Index / Dashboard page)
+     ============================ */
+
   dashboardTitle: 'Overview',
-  dashboardSubtitle: 'Quick access to calendar, reservations and today’s changes.',
+  dashboardSubtitle:
+    'Quick access to calendar, reservations and today’s changes.',
 
   occupancyCalendar: 'Occupancy calendar',
-  occupancyCalendarHint: 'View by apartment and month — check-in / checkout logic.',
+  occupancyCalendarHint:
+    'Monthly overview per apartment — check-in / checkout logic.',
   openCalendar: 'Open calendar',
 
   arrivalsToday: 'Arrivals today',
@@ -43,23 +75,23 @@ export default {
   openApartments: 'Open apartments',
 
   recentActivity: 'Recent activity',
-  recentActivityHint: 'recently created or updated reservations',
-  noActivity: 'No activity to show yet.',
+  recentActivityHint:
+    'Recently added or modified reservations',
+  noActivity: 'No recent activity yet.',
   refresh: 'Refresh',
 
+  /* ============================
+     ApartmentsPage.vue
+     ============================ */
 
-  months: {
-    january: 'January',
-    february: 'February',
-    march: 'March',
-    april: 'April',
-    may: 'May',
-    june: 'June',
-    july: 'July',
-    august: 'August',
-    september: 'September',
-    october: 'October',
-    november: 'November',
-    december: 'December',
-  },
+  apartments: 'Apartments',
+  apartmentsHint: 'List of apartments and basic details.',
+  addApartment: 'Add apartment',
+  apartmentDetails: 'Apartment details',
+  noApartments: 'No apartments found.',
+  search: 'Search…',
+  name: 'Name',
+  capacity: 'Capacity',
+  createdAt: 'Created',
+  loginRequired: 'Login required (auth-first).',
 }

@@ -68,7 +68,10 @@
             style="z-index: 3"
           >
             <div
-              v-if="shouldShowGuestName(scope.timestamp.date, res)"
+              v-if="
+                scope.timestamp.date < res.endExclusive &&
+                shouldShowGuestName(scope.timestamp.date, res)
+              "
               class="ellipsis text-caption q-pl-xs"
               :style="getNameStyle()"
             >
@@ -157,6 +160,15 @@ const selectedDate = ref(today)
 const apartments = ref([])
 const selectedApartment = ref(null)
 const reservations = ref([])
+
+const selectedApartmentObj = computed(
+  () => apartments.value.find((a) => a.id === selectedApartment.value) || null,
+)
+
+const selectedApartmentCapacity = computed(() => {
+  const c = selectedApartmentObj.value?.capacity
+  return c == null ? null : Number(c)
+})
 
 // Admin actions dialog
 const showResActions = ref(false)
@@ -322,7 +334,8 @@ function isPastDate(date) {
 }
 
 function reservationsForDay(date) {
-  // include checkout day (endExclusive) for the "cut" visuals
+  // LISTA rezervacija koje “dotiču” taj datum:
+  // uključujemo i checkout dan (endExclusive) da možemo nacrtat “cut”
   return reservations.value.filter((r) => date >= r.start && date <= r.endExclusive)
 }
 
@@ -341,7 +354,7 @@ function openEdit() {
 
   // set dialog dates (UI expects inclusive end)
   startDate.value = selectedReservation.value.start
-  endDate.value = addDaysUTC(selectedReservation.value.endExclusive, -1)
+  endDate.value = selectedReservation.value.endExclusive
 
   showResActions.value = false
   showDialog.value = true
@@ -357,15 +370,17 @@ async function confirmDelete() {
   selectedReservation.value = null
 }
 
-/** Booking layer visuals (uses Quasar theme tokens) */
 function getBookingLayerStyle(date) {
   const res = reservations.value
-  const starts = res.some((r) => r.start === date)
-  const isCheckoutDay = res.some((r) => r.endExclusive === date)
-  const middles = res.some((r) => date > r.start && date < r.endExclusive)
-
-  const turnover = starts && isCheckoutDay
   const C = 'var(--q-primary)'
+
+  const starts = res.some((r) => r.start === date)
+  const checkout = res.some((r) => r.endExclusive === date)
+  const occupying = res.some((r) => date >= r.start && date < r.endExclusive) // noćenje
+  const middle = res.some((r) => date > r.start && date < addDaysUTC(r.endExclusive, -1)) // strogo između
+
+  // turnover: check-in i check-out isti dan (jedan odlazi, drugi dolazi)
+  const turnover = starts && checkout
 
   if (turnover) {
     return {
@@ -378,11 +393,28 @@ function getBookingLayerStyle(date) {
     }
   }
 
-  if (middles) return { background: C, opacity: '0.9' }
-  if (starts)
-    return { background: `linear-gradient(135deg, transparent 0 50%, ${C} 50%)`, opacity: '0.95' }
-  if (isCheckoutDay)
-    return { background: `linear-gradient(135deg, ${C} 0 50%, transparent 50%)`, opacity: '0.95' }
+  // checkout dan: samo “cut” (lijevi trokut), ali NE puni dan
+  if (checkout && !starts) {
+    return {
+      background: `linear-gradient(135deg, ${C} 0 50%, transparent 50%)`,
+      borderRadius: 'var(--qa-radius-xs)',
+      opacity: '0.95',
+    }
+  }
+
+  // start dan (check-in): desni trokut
+  if (starts && !checkout) {
+    return {
+      background: `linear-gradient(135deg, transparent 0 50%, ${C} 50%)`,
+      borderRadius: 'var(--qa-radius-xs)',
+      opacity: '0.95',
+    }
+  }
+
+  // puni dani (noćenja): samo ako je stvarno “occupied”
+  if (occupying && (middle || (!starts && !checkout))) {
+    return { background: C, opacity: '0.9', borderRadius: 'var(--qa-radius-xs)' }
+  }
 
   return {}
 }
@@ -420,12 +452,24 @@ function onClickDate({ scope }) {
  * payload: { id?, guestName, guestsCount, notes, start, end }  // end is inclusive in UI
  */
 async function handleReservationSave(payload) {
+  // capacity guard (frontend)
+  const cap = selectedApartmentCapacity.value
+  const gc = payload.guestsCount == null ? null : Number(payload.guestsCount)
+
+  if (cap != null && gc != null && gc > cap) {
+    $q.notify({
+      type: 'negative',
+      message: $t('tooManyGuests', { count: gc, capacity: cap }),
+    })
+    return
+  }
+
   try {
     const body = {
       apartmentId: selectedApartment.value,
       guestName: payload.guestName,
       startDate: payload.start,
-      endDate: addDaysUTC(payload.end, 1), // checkout exclusive
+      endDate: payload.end, // checkout exclusive
       guestsCount: payload.guestsCount,
       notes: payload.notes,
     }
