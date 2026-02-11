@@ -56,6 +56,9 @@ export default {
   deleteApartmentConfirm: 'Želiš li obrisati ovaj apartman?',
   deleted: 'Obrisano',
 
+  editApartment: 'Uredi apartman',
+  updated: 'Ažurirano',
+
 
   /* ============================
       Dashboard (Index / Dashboard page)

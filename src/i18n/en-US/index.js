@@ -56,6 +56,9 @@ export default {
   deleteApartmentConfirm: 'Do you want to delete this apartment?',
   deleted: 'Deleted',
 
+  editApartment: 'Edit apartment',
+  updated: 'Updated',
+
   /* ============================
      Dashboard (Index / Dashboard page)
      ============================ */

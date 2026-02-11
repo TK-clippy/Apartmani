@@ -144,7 +144,13 @@
             <q-tooltip v-if="!auth.isAuthed">{{ $t('loginRequired') }}</q-tooltip>
           </q-btn>
 
-          <q-btn unelevated color="primary" :label="$t('edit')" disable />
+          <q-btn
+            unelevated
+            color="primary"
+            :label="$t('edit')"
+            :disable="!auth.isAuthed || !selected"
+            @click="openEdit"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -154,8 +160,9 @@
       <q-card class="qa-card" style="min-width: 460px; max-width: 92vw">
         <q-card-section class="row items-center">
           <div>
-            <div class="text-h6">{{ $t('addApartment') }}</div>
-            <div class="text-caption text-grey-6">{{ $t('apartmentsHint') }}</div>
+            <div class="text-h6">
+              {{ editing ? $t('editApartment') : $t('addApartment') }}
+            </div>
           </div>
           <q-space />
           <q-btn flat round icon="close" v-close-popup class="qa-iconbtn" :disable="creating" />
@@ -222,6 +229,7 @@ const selected = ref(null)
 const showCreate = ref(false)
 const creating = ref(false)
 const deleting = ref(false)
+const editing = ref(false)
 const form = ref({
   name: '',
   capacity: null,
@@ -276,6 +284,7 @@ async function fetchApartments() {
 }
 
 function openCreate() {
+  editing.value = false
   form.value = { name: '', capacity: null }
   showCreate.value = true
 }
@@ -285,13 +294,25 @@ async function createApartment() {
 
   creating.value = true
   try {
-    await api.post('/apartments', {
-      name: form.value.name,
-      capacity: form.value.capacity ?? null,
-    })
+    if (editing.value && selected.value) {
+      await api.put(`/apartments/${selected.value.id}`, {
+        name: form.value.name,
+        capacity: form.value.capacity ?? null,
+      })
 
-    $q.notify({ type: 'positive', message: $t('saved') || 'Saved' })
+      $q.notify({ type: 'positive', message: $t('updated') || 'Updated' })
+    } else {
+      await api.post('/apartments', {
+        name: form.value.name,
+        capacity: form.value.capacity ?? null,
+      })
+
+      $q.notify({ type: 'positive', message: $t('saved') || 'Saved' })
+    }
+
     showCreate.value = false
+    editing.value = false
+    selected.value = null
     await fetchApartments()
   } catch (err) {
     $q.notify({
@@ -334,6 +355,19 @@ async function deleteSelected() {
   } finally {
     deleting.value = false
   }
+}
+
+function openEdit() {
+  if (!selected.value) return
+
+  form.value = {
+    name: selected.value.name,
+    capacity: selected.value.capacity,
+  }
+
+  editing.value = true
+  showDetails.value = false
+  showCreate.value = true
 }
 
 onMounted(fetchApartments)
