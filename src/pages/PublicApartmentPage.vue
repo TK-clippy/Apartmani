@@ -2,7 +2,7 @@
   <q-page>
     <!-- HERO -->
     <div class="hero">
-      <q-img :src="apartment.heroUrl" class="hero__img" :ratio="16/9">
+      <q-img :src="apartment.heroUrl" class="hero__img" :ratio="16 / 9">
         <div class="hero__overlay" />
         <div class="hero__content q-pa-md">
           <div class="text-h4 text-weight-bold text-white">{{ apartment.name }}</div>
@@ -54,9 +54,7 @@
                 readonly
               />
 
-              <div class="text-caption text-grey-7 q-mt-md">
-                Označeni su zauzeti dani.
-              </div>
+              <div class="text-caption text-grey-7 q-mt-md">Označeni su zauzeti dani.</div>
             </q-card-section>
           </q-card>
         </div>
@@ -66,9 +64,7 @@
           <q-card bordered flat>
             <q-card-section>
               <div class="text-subtitle1 text-weight-medium">Upit za rezervaciju</div>
-              <div class="text-body2 text-grey-7 q-mt-xs">
-                Odgovaramo čim prije.
-              </div>
+              <div class="text-body2 text-grey-7 q-mt-xs">Odgovaramo čim prije.</div>
             </q-card-section>
 
             <q-separator />
@@ -80,14 +76,32 @@
 
               <div class="row q-col-gutter-sm">
                 <div class="col-6">
-                  <q-input v-model="form.arrival" label="Dolazak" outlined dense placeholder="YYYY/MM/DD" />
+                  <q-input
+                    v-model="form.arrival"
+                    label="Dolazak"
+                    outlined
+                    dense
+                    placeholder="YYYY/MM/DD"
+                  />
                 </div>
                 <div class="col-6">
-                  <q-input v-model="form.departure" label="Odlazak" outlined dense placeholder="YYYY/MM/DD" />
+                  <q-input
+                    v-model="form.departure"
+                    label="Odlazak"
+                    outlined
+                    dense
+                    placeholder="YYYY/MM/DD"
+                  />
                 </div>
               </div>
 
-              <q-input v-model.number="form.guests" label="Broj osoba" type="number" outlined dense />
+              <q-input
+                v-model.number="form.guests"
+                label="Broj osoba"
+                type="number"
+                outlined
+                dense
+              />
               <q-input v-model="form.message" label="Poruka" type="textarea" outlined autogrow />
 
               <q-btn
@@ -106,7 +120,8 @@
               <div class="text-weight-medium q-mb-xs">Napomena</div>
               Ovo je placeholder public page. Kasnije ćemo umjesto hardcoded podataka povlačiti:
               <div class="q-mt-sm">
-                <code>GET /public/apartments/:id</code> i <code>GET /public/apartments/:id/bookings</code>.
+                <code>GET /public/apartments/:id</code> i
+                <code>GET /public/apartments/:id/bookings</code>.
               </div>
             </q-card-section>
           </q-card>
@@ -137,7 +152,7 @@ const route = useRoute()
 const HERO_BY_APT_ID = {
   1: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&fm=jpg&q=60&w=2400',
   2: 'https://images.unsplash.com/photo-1760573776062-7d2a7baeb49d?auto=format&fit=crop&fm=jpg&q=60&w=2400',
-  3: 'https://images.unsplash.com/photo-1673403731025-2f1ac0c042f5?auto=format&fit=crop&fm=jpg&q=60&w=2400'
+  3: 'https://images.unsplash.com/photo-1673403731025-2f1ac0c042f5?auto=format&fit=crop&fm=jpg&q=60&w=2400',
 }
 
 const MOCK_APARTMENTS = [
@@ -148,7 +163,7 @@ const MOCK_APARTMENTS = [
     capacity: 4,
     beds: 2,
     description: 'Svijetao apartman u centru, idealan za parove i obitelji.',
-    amenities: ['Wi-Fi', 'Klima', 'Kuhinja', 'Parking (na upit)']
+    amenities: ['Wi-Fi', 'Klima', 'Kuhinja', 'Parking (na upit)'],
   },
   {
     id: 2,
@@ -157,7 +172,7 @@ const MOCK_APARTMENTS = [
     capacity: 3,
     beds: 2,
     description: 'Mirna lokacija, par minuta do plaže, super za digitalne nomade.',
-    amenities: ['Wi-Fi', 'Klima', 'Balkon', 'Perilica']
+    amenities: ['Wi-Fi', 'Klima', 'Balkon', 'Perilica'],
   },
   {
     id: 3,
@@ -166,18 +181,18 @@ const MOCK_APARTMENTS = [
     capacity: 6,
     beds: 3,
     description: 'Pogled na more, velika terasa i puno dnevnog svjetla.',
-    amenities: ['Wi-Fi', 'Klima', 'Terasa', 'Roštilj']
-  }
+    amenities: ['Wi-Fi', 'Klima', 'Terasa', 'Roštilj'],
+  },
 ]
 
 // ---- Apartment resolve
 const apartmentId = computed(() => Number(route.params.apartmentId || 1))
 
 const apartment = computed(() => {
-  const found = MOCK_APARTMENTS.find(a => a.id === apartmentId.value) || MOCK_APARTMENTS[0]
+  const found = MOCK_APARTMENTS.find((a) => a.id === apartmentId.value) || MOCK_APARTMENTS[0]
   return {
     ...found,
-    heroUrl: HERO_BY_APT_ID[found.id] || HERO_BY_APT_ID[1]
+    heroUrl: HERO_BY_APT_ID[found.id] || HERO_BY_APT_ID[1],
   }
 })
 
@@ -185,10 +200,13 @@ const apartment = computed(() => {
 const MOCK_BOOKINGS_BY_APT = {
   1: [
     { from: '2026/02/15', to: '2026/02/18' },
-    { from: '2026/03/02', to: '2026/03/06' }
+    { from: '2026/03/02', to: '2026/03/06' },
   ],
   2: [{ from: '2026/02/20', to: '2026/02/22' }],
-  3: [{ from: '2026/02/12', to: '2026/02/14' }, { from: '2026/03/10', to: '2026/03/15' }]
+  3: [
+    { from: '2026/02/12', to: '2026/02/14' },
+    { from: '2026/03/10', to: '2026/03/15' },
+  ],
 }
 
 function expandRange(from, to) {
@@ -197,7 +215,10 @@ function expandRange(from, to) {
   // uključimo sve dane od from do to (inclusive)
   while (cur <= to) {
     out.push(cur)
-    cur = date.formatDate(date.addToDate(date.extractDate(cur, 'YYYY/MM/DD'), { days: 1 }), 'YYYY/MM/DD')
+    cur = date.formatDate(
+      date.addToDate(date.extractDate(cur, 'YYYY/MM/DD'), { days: 1 }),
+      'YYYY/MM/DD',
+    )
   }
   return out
 }
@@ -222,7 +243,7 @@ const form = reactive({
   arrival: '',
   departure: '',
   guests: 2,
-  message: ''
+  message: '',
 })
 
 const sending = ref(false)
@@ -237,10 +258,11 @@ async function submit() {
   try {
     // TODO: zamijeni sa stvarnim endpointom
     // await api.post('/public/inquiries', { apartmentId: apartmentId.value, ...form })
-    await new Promise(r => setTimeout(r, 450))
+    await new Promise((r) => setTimeout(r, 450))
 
     $q.notify({ type: 'positive', message: 'Upit poslan! Javimo se uskoro.' })
     form.message = ''
+    // eslint-disable-next-line no-unused-vars
   } catch (e) {
     $q.notify({ type: 'negative', message: 'Greška pri slanju upita.' })
   } finally {
@@ -256,7 +278,7 @@ async function submit() {
 .hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.55));
 }
 .hero__content {
   position: absolute;
