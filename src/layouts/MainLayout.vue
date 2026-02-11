@@ -8,15 +8,16 @@
           <q-badge rounded>internal</q-badge>
         </div>
 
-        <!-- Tabs (u ISTOM headeru) -->
+        <!-- Tabs -->
         <q-tabs
           class="q-ml-lg qa-header-tabs"
           shrink
           dense
-          indicator-color="primary"
-          active-color="primary"
+          no-caps
+          active-color="white"
+          indicator-color="white"
         >
-          <q-route-tab to="/" label="Početna" />
+          <q-route-tab to="/" label="Početna" exact />
           <q-route-tab to="/calendar" label="Kalendar" />
           <q-route-tab to="/apartments" label="Apartmani" />
         </q-tabs>
@@ -68,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -92,6 +93,11 @@ function setLocale(loc) {
 const savedDark = localStorage.getItem('dark')
 const isDark = ref(savedDark ? savedDark === '1' : $q.dark.isActive)
 
+/** Na mountu uskladi Quasar dark sa stanjem (da ne ostane krivo) */
+onMounted(() => {
+  $q.dark.set(!!isDark.value)
+})
+
 /** Sinkronizacija toggle -> Quasar dark */
 watch(isDark, (val) => {
   $q.dark.set(!!val)
@@ -105,17 +111,17 @@ function onLogout() {
 </script>
 
 <style scoped>
-/* Tabovi da ne "nestanu" na active (sve bijelo, inactive malo fade) */
+/* Tabovi: inactive malo fade, active full white */
 .qa-header-tabs :deep(.q-tab) {
-  color: rgba(255, 255, 255, 0.78) !important;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .qa-header-tabs :deep(.q-tab--active) {
-  color: rgba(255, 255, 255, 1) !important;
+  color: rgba(255, 255, 255, 1);
   font-weight: 650;
 }
 
-/* indikator tanak i clean */
+/* Indikator tanak i clean */
 .qa-header-tabs :deep(.q-tabs__indicator) {
   height: 2px;
   border-radius: 2px;
