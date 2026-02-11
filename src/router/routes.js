@@ -21,6 +21,16 @@ const routes = [
   },
 
   { path: '/:catchAll(.*)*', component: () => import('pages/ErrorNotFound.vue') },
+
+
+  {
+    path: '/p/:apartmentId',
+    component: () => import('layouts/ClientLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/PublicApartmentPage.vue') }
+    ]
+  }
+
 ]
 
 export default routes

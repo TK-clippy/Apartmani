@@ -24,6 +24,11 @@ export default defineRouter(function ({ store }) {
   Router.beforeEach((to) => {
     const auth = useAuthStore(store)
 
+    // ✅ PUBLIC rute (bez logina)
+    if (to.meta?.public === true || to.path.startsWith('/p')) {
+      return true
+    }
+
     if (to.path === '/login') {
       return true
     }
