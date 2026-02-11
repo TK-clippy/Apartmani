@@ -297,3 +297,15 @@ body.body--dark {
     border-bottom: 1px solid var(--qa-border-dark) !important;
   }
 }
+
+.qa-tile {
+  display: flex;
+  flex-direction: column;
+}
+
+.qa-tile__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}

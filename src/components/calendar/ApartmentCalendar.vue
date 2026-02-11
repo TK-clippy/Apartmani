@@ -311,6 +311,7 @@ onMounted(async () => {
   try {
     await fetchApartments()
     await fetchReservationsForVisibleMonth()
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({ type: 'negative', message: $t('failedToLoadData') })
   }
@@ -439,6 +440,7 @@ async function handleReservationSave(payload) {
     startDate.value = null
     endDate.value = null
     editingReservation.value = null
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({
       type: 'negative',
@@ -453,6 +455,7 @@ async function handleReservationDelete(id) {
     await fetchReservationsForVisibleMonth()
     editingReservation.value = null
     $q.notify({ type: 'positive', message: $t('reservationDeleted') })
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     $q.notify({ type: 'negative', message: $t('failedToDeleteReservation') })
   }
