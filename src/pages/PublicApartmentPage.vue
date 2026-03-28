@@ -274,6 +274,7 @@ async function submit() {
 <style scoped>
 .hero__img {
   border-radius: 0;
+  max-height: 50vh;
 }
 .hero__overlay {
   position: absolute;

@@ -3,6 +3,17 @@
    Uses Quasar theme tokens (no hard color changes)
    ============================ */
 
+body {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 :root {
   /* GNOME/libadwaita-ish radii */
   --qa-radius: 22px; /* cards, panels */

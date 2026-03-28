@@ -17,9 +17,11 @@
           active-color="white"
           indicator-color="white"
         >
-          <q-route-tab to="/" label="Početna" exact />
-          <q-route-tab to="/calendar" label="Kalendar" />
-          <q-route-tab to="/apartments" label="Apartmani" />
+          <q-tabs no-caps>
+            <q-route-tab to="/" :label="$t('nav.home')" exact />
+            <q-route-tab to="/calendar" :label="$t('nav.calendar')" />
+            <q-route-tab to="/apartments" :label="$t('nav.apartments')" />
+          </q-tabs>
         </q-tabs>
 
         <q-space />

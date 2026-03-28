@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="hHh lpR fFf">
+  <q-layout view="hHh lpR fFf" class="client-layout">
     <q-header elevated class="bg-white text-dark">
       <q-toolbar class="q-px-md">
         <q-btn flat dense icon="arrow_back" label="Natrag" @click="$router.back()" />
@@ -28,5 +28,18 @@
 </template>
 
 <script setup>
-const phone = '+385 99 123 4567' // TODO: stavi iz configa
+const phone = '+385 99 123 4567'
 </script>
+
+<style scoped>
+.client-layout {
+  font-family:
+    'Manrope',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+</style>
