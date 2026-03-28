@@ -6,6 +6,12 @@ export default {
   edit: 'Edit',
   delete: 'Delete',
 
+  nav: {
+    home: 'Home',
+    calendar: 'Calendar',
+    apartments: 'Apartments'
+  },
+
   failedToLoadData: 'Failed to load data.',
   failedToSaveReservation: 'Failed to save reservation.',
   failedToUpdateReservation: 'Failed to update reservation.',

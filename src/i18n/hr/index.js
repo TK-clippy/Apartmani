@@ -6,6 +6,12 @@ export default {
   edit: 'Uredi',
   delete: 'Obriši',
 
+  nav: {
+    home: 'Početna',
+    calendar: 'Kalendar',
+    apartments: 'Apartmani'
+  },
+
   failedToLoadData: 'Učitavanje podataka nije uspjelo.',
   failedToSaveReservation: 'Spremanje rezervacije nije uspjelo.',
   failedToUpdateReservation: 'Ažuriranje rezervacije nije uspjelo.',
@@ -13,7 +19,7 @@ export default {
   failedToDeleteReservation: 'Brisanje rezervacije nije uspjelo.',
 
   months: {
-    // 👉 koristi se u ApartmentsCalendar.vue
+    // koristi se u ApartmentsCalendar.vue
     january: 'Siječanj',
     february: 'Veljača',
     march: 'Ožujak',
